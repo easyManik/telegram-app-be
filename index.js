@@ -1,15 +1,17 @@
 const express = require("express");
+const app = express();
+const http = require("http").Server(app);
+const cors = require("cors");
+const PORT = 4000;
 
 require("dotenv").config();
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
-const cors = require("cors");
 const router = require("./src/routes/index");
 const { responses } = require("./src/middleware/common");
-
+const socketController = require("./src/controller/socket");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-
 const helmet = require("helmet");
 const createError = require("http-errors");
 const messageModel = require("./src/model/message");
@@ -20,84 +22,11 @@ const jwt = require("jsonwebtoken");
 const moment = require("moment");
 moment.locale("id");
 
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: "http://localhost:3000",
-    credentials: true, //access-control-allow-credentials:true
-    optionSuccessStatus: 200,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  },
-});
-const PORT = 4000;
-
-io.on("connection", (socket) => {
-  console.log(`user connect ${socket.id}`);
-
-  socket.on("message", (data) => {
-    let time = new Date();
-    io.emit("messageBe", { message: data, date: time });
-    // socket.broadcast.emit("messageBe",{message: data, date: time})
-    console.log("data user after connect", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`user disconnect ${socket.id}`);
-  });
-
-  socket.on("sendMessage", ({ receiver_id, body }, callback) => {
-    const message = {
-      receiver_id: receiver_id,
-      message: body,
-      sender_id: socket.id,
-      post_at: new Date(),
-    };
-    callback({
-      ...message,
-      post_at: moment(message.post_at).format("LT"),
-    });
-    messageModel.create(message).then(() => {
-      socket.broadcast.to(receiver_id).emit("newMessage", message);
-    });
-  });
-
-  socket.on("deleteMessage", (data) => {
-    console.log("delet message", data);
-    messageModel.deleteMessage(data.id);
-
-    socket.to(data.id).emit("deleteMessageBE", data);
-  });
-});
-
-io.use((socket, next) => {
-  const token = socket.handshake.query.token;
-  jwt.verify(token, process.env.SECRET_KEY_JWT, function (error, payload) {
-    if (error) {
-      if (error && error.name === "JsonWebTokenError") {
-        next(createError(400, "token invalid"));
-      } else if (error && error.name === "TokenExpiredError") {
-        next(createError(400, "token expired"));
-      } else {
-        next(createError(400, "Token not active"));
-      }
-    }
-
-    socket.id = payload.id;
-    socket.join(paylaod.id);
-    next();
-  });
-});
-
-const corsOptions = {
-  origin: "http://localhost:3000",
-  credentials: true, //access-control-allow-credentials:true
-  optionSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 app.use(morgan("dev"));
 app.use("/img", express.static("./image"));
+app.use(cors());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/", router);
@@ -115,6 +44,131 @@ app.use(
 app.use(xss());
 app.use(cookieParser());
 
+// const httpServer = createServer(app);
+// const io = new Server(httpServer, {
+//   cors: {
+//     origin: "http://localhost:3000",
+//     credentials: true, //access-control-allow-credentials:true
+//     optionSuccessStatus: 200,
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//   },
+// });
+
+// io.on("connection", (socket) => {
+//   console.log("new user connect");
+//   socketController(io, socket);
+// });
+
+// io.use((socket, next) => {
+//   const token = socket.handshake.query.token;
+//   jwt.verify(token, process.env.SECRET_KEY_JWT, function (error, payload) {
+//     if (error) {
+//       if (error && error.name === "JsonWebTokenError") {
+//         next(createError(400, "token invalid"));
+//       } else if (error && error.name === "TokenExpiredError") {
+//         next(createError(400, "token expired"));
+//       } else {
+//         next(createError(400, "Token not active"));
+//       }
+//     }
+
+//     socket.id = payload.id;
+//     socket.join(payload.id);
+//     next();
+//   });
+// });
+
+// const corsOptions = {
+//   origin: "http://localhost:3000",
+//   credentials: true, //access-control-allow-credentials:true
+//   optionSuccessStatus: 200,
+// };
+
+const socketIO = require("socket.io")(http, {
+  cors: {
+    origin: "http://localhost:3000",
+    credentials: true,
+    //access-control-allow-credentials:true
+    optionSuccessStatus: 200,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
+
+socketIO.use((socket, next) => {
+  const token = socket.handshake.query.token;
+  jwt.verify(token, process.env.JWT_KEY, function (error, payload) {
+    if (error) {
+      if (error && error.name === "JsonWebTokenError") {
+        next(createError(400, "token invalid"));
+      } else if (error && error.name === "TokenExpiredError") {
+        next(createError(400, "token expired"));
+      } else {
+        next(createError(400, "Token not active"));
+      }
+    }
+
+    socket.userId = payload.id;
+    socket.join(payload.id);
+    next();
+  });
+});
+
+let users = [];
+//Add this before the app.get() block
+socketIO.on("connection", (socket) => {
+  console.log(
+    `⚡: ${socket.id} user just connected! dan id user ${socket.userId}`
+  );
+
+  socket.on("inisialRoom", ({ room, username }) => {
+    console.log(room);
+    socket.join(`room:${room}`);
+    socket.broadcast.to(`room:${room}`).emit("notifAdmin", {
+      sender: "Admin",
+      message: `${username} bergabung dalam group`,
+      date: new Date().getHours() + ":" + new Date().getMinutes(),
+    });
+  });
+
+  socket.on("sendMessage", ({ idReceiver, messageBody }, callback) => {
+    const message = {
+      receiver_id: idReceiver,
+      message: messageBody,
+      sender_id: socket.userId,
+      created_at: new Date(),
+    };
+    console.log(message, "message");
+    callback({
+      ...message,
+      created_at: moment(message.post_at).format("LT"),
+    });
+    messageModel.create(message).then(() => {
+      socket.broadcast.to(idReceiver).emit("newMessage", message);
+    });
+  });
+  socket.on("deleteMessage", (data) => {
+    console.log(data);
+    messageModel.deleteMessage(data.chat_id);
+
+    socket.to(data.chat_id).emit("deleteMessageBE", data);
+  });
+  socket.on("disconnect", () => {
+    console.log("🔥: A user disconnected");
+    //Updates the list of users when a user disconnects from the server
+    users = users.filter((user) => user.socketID !== socket.id);
+    // console.log(users);
+    //Sends the list of users to the client
+    socketIO.emit("newUserResponse", users);
+    socket.disconnect();
+  });
+});
+
+app.get("/api", (req, res) => {
+  res.json({
+    message: "Hello world",
+  });
+});
+
 app.all("*", (req, res, next) => {
   responses(res, 404, false, null, "404 Not Found");
 });
@@ -123,6 +177,6 @@ app.get("/", (req, res, next) => {
   res.status(200).json({ status: "success", statusCode: 200 });
 });
 
-httpServer.listen(PORT, () => {
+http.listen(PORT, () => {
   console.log(`app running on ${PORT}`);
 });

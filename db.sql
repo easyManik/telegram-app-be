@@ -4,7 +4,7 @@ create table users(
     name VARCHAR(50) not NULL,
     email VARCHAR(100) NOT NULL, 
     password VARCHAR(255) NOT NULL, 
-    image VARCHAR(255) DEFAULT NULL,
+    image VARCHAR(500) DEFAULT NULL,
     updated_at TIMESTAMP,
     username VARCHAR(255),
     bio VARCHAR(300)
@@ -17,13 +17,15 @@ ADD CONSTRAINT users_id_pk
 PRIMARY KEY (id);
 
 CREATE TABLE chat(
-    id varchar(255) not null,
-    body VARCHAR(255) NOT NULL,
-    sender_id varchar(255) not null REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    receiver_id varchar(255) not null REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    id SERIAL PRIMARY KEY NOT NULL,
+    message VARCHAR(255)  ,
+    sender_id varchar(255) not NULL,
+    receiver_id varchar(255) not null ,
     post_at timestamp default current_timestamp,
     UNIQUE (id)
 );
+
+drop TABLE users;
 
 CREATE TABLE groupmessage (
     id varchar(255) not null,

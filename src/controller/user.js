@@ -142,7 +142,8 @@ const UserController = {
       let token = req.headers.authorization.split(" ")[1];
       let payload = jwt.verify(token, process.env.JWT_KEY);
       const id = payload.id;
-      const { name, email, phone, username, bio, image } = req.body;
+      const { name, email, phone, username, bio } = req.body;
+      const image = req.files.image[0].path;
       let profile = {};
       profile.image = image ? image[0].path : null;
 

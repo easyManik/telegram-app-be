@@ -3,25 +3,10 @@ const { v4: uuid } = require("uuid");
 const response = require("../helper/response");
 
 module.exports.getMessage = async (req, res, next) => {
-  try {
-    const receiver_id = req.body.receiver_id;
-    const { id: sender_id } = req.payload;
-    console.log("payload id", sender_id);
-    const { rows } = await getMessage({ sender_id, receiver_id });
-    if (!rows) {
-      return response(res, rows, 500, "get data failed");
-    }
-    const newData = rows.map((data) => {
-      const date = new Date(data.time * 1000);
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      data.time = hours + ":" + minutes;
-      return data;
-    });
-    response(res, newData, 200, "get data success");
-  } catch (error) {
-    console.log(error);
-  }
+  const receiver_id = req.params.receiver_id;
+  const sender_id = req.payload.id;
+  const { rows } = await getMessage(sender_id, receiver_id);
+  response(res, rows, 200, "success add message");
 };
 
 module.exports.create = async (req, res, next) => {
@@ -32,10 +17,10 @@ module.exports.create = async (req, res, next) => {
     // if (type != "access-token") {
     //   return response(res, [], 404, "TOKEN WRONG");
     // }
-    const { body, receiver_id, id: uuid } = req.body;
+    const { message, receiver_id, id: uuid } = req.body;
     const data = {};
     data.id = uuid;
-    data.body = body;
+    data.message = message;
     data.sender_id = id;
     data.receiver_id = receiver_id;
     const { rowCount } = await create(data);

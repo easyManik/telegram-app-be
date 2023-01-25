@@ -1,10 +1,10 @@
 const pool = require("../config/db");
 
-const create = ({ id, body, sender_id, receiver_id }) => {
+const create = ({ sender_id, receiver_id, message }) => {
   return new Promise((resolve, reject) => {
     pool.query(
-      "INSERT INTO chat (id, body, sender_id, receiver_id) values ($1, $2, $3, $4)",
-      [id, body, sender_id, receiver_id],
+      "INSERT INTO chat(sender_id, receiver_id, message)VALUES($1, $2, $3)",
+      [sender_id, receiver_id, message],
       (error, result) => {
         if (!error) {
           resolve(result);
