@@ -1,5 +1,6 @@
 const { verify } = require("../helper/jwt");
-const response = require("../helper/common");
+const { responses } = require("./common");
+
 const createError = require("http-errors");
 
 module.exports.user = async (req, res, next) => {
@@ -16,7 +17,7 @@ module.exports.user = async (req, res, next) => {
       req.payload = payload;
       next();
     } else {
-      response(res, [], 200, "SERVER NEED TOKEN");
+      responses(res, 204, false, [], "SERVER NEED TOKEN");
     }
   } catch (error) {
     if (error && error.name === "JsonWebTokenError") {

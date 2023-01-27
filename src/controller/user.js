@@ -5,7 +5,6 @@ const { responses } = require("../middleware/common");
 const { findEmail, create, verification } = require("../model/user");
 const email = require("../middleware/email");
 const ModelUsers = require("../model/user");
-const { response } = "../helper/common";
 const jwt = require("jsonwebtoken");
 
 const Port = process.env.PORT;
@@ -117,12 +116,6 @@ const UserController = {
       console.log(e);
     }
   },
-  // const id = req.payload.id;
-  // ModelUsers.profileUser(id)
-  //   .then((result) =>
-  //     responses(res, 200, true, result.rows, "get data success")
-  //   )
-  //   .catch((err) => response(res, 404, false, err, "get data fail"));
 
   getAll: async (req, res) => {
     try {
@@ -147,24 +140,6 @@ const UserController = {
       let profile = {};
       profile.image = image ? image[0].path : null;
 
-      // if (req.files.image) {
-      //   image = req.files.image[0].path;
-      //   // image = `${process.env.HOST_LOCAL_IMAGE}image/${req.files.image[0].filename}`
-      //   const url = await new Promise((resolve, reject) => {
-      //     cloudinary.uploader.upload(
-      //       image,
-      //       { folder: "tektok/image" },
-      //       function (error, result) {
-      //         if (result) {
-      //           resolve(result.url);
-      //         } else if (error) {
-      //           reject(error);
-      //         }
-      //       }
-      //     );
-      //   });
-      //   image = url;
-      // }
       const data = {
         id,
         name,

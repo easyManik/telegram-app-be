@@ -1,12 +1,12 @@
 const { create, getMessage, deleteMessage } = require("../model/message");
 const { v4: uuid } = require("uuid");
-const response = require("../helper/response");
+const { responses } = require("../middleware/common");
 
 module.exports.getMessage = async (req, res, next) => {
   const receiver_id = req.params.receiver_id;
   const sender_id = req.payload.id;
   const { rows } = await getMessage(sender_id, receiver_id);
-  response(res, rows, 200, "success add message");
+  responses(res, 200, true, rows, "success add message");
 };
 
 module.exports.create = async (req, res, next) => {
@@ -14,9 +14,6 @@ module.exports.create = async (req, res, next) => {
     const payload = req.payload;
     const { id, type } = payload;
     console.log(id);
-    // if (type != "access-token") {
-    //   return response(res, [], 404, "TOKEN WRONG");
-    // }
     const { message, receiver_id, id: uuid } = req.body;
     const data = {};
     data.id = uuid;
@@ -25,9 +22,9 @@ module.exports.create = async (req, res, next) => {
     data.receiver_id = receiver_id;
     const { rowCount } = await create(data);
     if (!rowCount) {
-      return response(res, [], 404, "failed add message");
+      return responses(res, 404, false, [], "add message fail");
     }
-    response(res, data, 200, "success add message");
+    responses(res, 200, true, data, "success add message");
   } catch (error) {
     console.log(error);
   }
@@ -38,9 +35,9 @@ module.exports.deleteMessage = async (req, res, next) => {
     const id = req.params.id;
     const { rowCount } = await deleteMessage(id);
     if (!rowCount) {
-      return response(res, [], 200, "delete failed");
+      responses(res, 404, false, [], "delete failed");
     }
-    return response(res, [], 200, "delete success");
+    return responses(res, 200, true, [], "delete success");
   } catch (error) {
     console.log(error);
   }

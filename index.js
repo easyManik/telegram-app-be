@@ -9,20 +9,14 @@ const bodyParser = require("body-parser");
 const morgan = require("morgan");
 const router = require("./src/routes/index");
 const { responses } = require("./src/middleware/common");
-const socketController = require("./src/controller/socket");
-const { createServer } = require("http");
-const { Server } = require("socket.io");
 const helmet = require("helmet");
 const createError = require("http-errors");
 const messageModel = require("./src/model/message");
 const xss = require("xss-clean");
-const path = require("path");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const moment = require("moment");
 moment.locale("id");
-
-// app.use(cors(corsOptions));
 
 app.use(morgan("dev"));
 app.use("/img", express.static("./image"));
@@ -43,46 +37,6 @@ app.use(
 
 app.use(xss());
 app.use(cookieParser());
-
-// const httpServer = createServer(app);
-// const io = new Server(httpServer, {
-//   cors: {
-//     origin: "http://localhost:3000",
-//     credentials: true, //access-control-allow-credentials:true
-//     optionSuccessStatus: 200,
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//   },
-// });
-
-// io.on("connection", (socket) => {
-//   console.log("new user connect");
-//   socketController(io, socket);
-// });
-
-// io.use((socket, next) => {
-//   const token = socket.handshake.query.token;
-//   jwt.verify(token, process.env.SECRET_KEY_JWT, function (error, payload) {
-//     if (error) {
-//       if (error && error.name === "JsonWebTokenError") {
-//         next(createError(400, "token invalid"));
-//       } else if (error && error.name === "TokenExpiredError") {
-//         next(createError(400, "token expired"));
-//       } else {
-//         next(createError(400, "Token not active"));
-//       }
-//     }
-
-//     socket.id = payload.id;
-//     socket.join(payload.id);
-//     next();
-//   });
-// });
-
-// const corsOptions = {
-//   origin: "http://localhost:3000",
-//   credentials: true, //access-control-allow-credentials:true
-//   optionSuccessStatus: 200,
-// };
 
 const socketIO = require("socket.io")(http, {
   cors: {
